@@ -7,12 +7,16 @@ categories: programming
 ---
 
 
-So it happens that the function abs() on a 32 bit int has a special case where the outcome is negative (depends on language, details follow). There is no need for alarm: the software you wrote yesterday will work today just as well. I learned about this only recently, and it is a geeky detail that might interest more people than just myself. So I wrote it down.
+So it happens that the function abs() on a 32/64 bit int has a special case where the outcome is negative (depends on language, details follow). There is no need for alarm: the software you wrote yesterday will work today just as well. I only recently figured this out, and it is a geeky detail that might interest more people than just myself.
 
-The issue arises because of an edge case in "2's complement", the system used in todays computers to represent negate numbers. A 32 bit 2's complement number can represent the values -2 147 483 648 up to 2 147 483 647. Did you notice there is one postive value less than we have negative values? If you try to take it's absolute value, it should become +2 147 483 648, which is not representable in 2's complement.
-But which value will it get instead? 
+So I decided to write it down.
 
-For those not familar with 2's complement: You likely know that if you have the value 0x00 (8 bit ), and subtract 1 from it, it will underflow to 0xFF. This is what 2's complement defines as -1. If you subtract 1 once again, you get 0xFE which is -2. And so on: in fact, this underflow happens so reliably that processors can do add/subtract with the same circuits as used for unsigned math. All numbers with a 1 as the most significant bit are negative numbers. Because 0 counts as one of the positive numbers, we end up with one extra negative value. 
+The issue arises because of an edge case in "2's complement", the system used in todays computers to represent negate numbers. A 32 bit 2's complement number can represent the values -2 147 483 648 up to 2 147 483 647. Notice that there is one postive value less than there are negative values. If you try to take it's absolute value, it should become +2 147 483 648. However, there is no signed 32 bit integer with that value.
+
+But what will happen in stead? 
+
+For those not familar with [2's complement](https://en.wikipedia.org/wiki/Two's_complement), I'll explain the idea.  
+If you have the (unsigned, 8 bit) value 0x00 and subtract 1 from it, it underflows to the value 0xFF. This is what 2's complement defines as -1. If you subtract 1 once again, you get 0xFE which is -2. It is really that simple: binary processors all simply inderflow if you subtract something from 0, and whatever you get is considered "-something". It turns out that, for add/subtract, signed and unsigned values can be treated identically. That is called 2's complement. All values with the highest bit set will be considered negative. Exactly half of all represented values will be negative values. The other half are positive values including 0. Because 0 is lumped in with the positive values, we have one fewer positive values (as I mentioned earlier).  
 
 The rule for abs() is: test the number's sign. If negative, negate the number, otherwise return it as-is.  
 How does one negate a 2's complement number? You can subtract the number from 0 (obviously). In hardware, you cal also flip all the bits, and then add a 1. If you start with 1, flipping all the bits will produce 0xFE. Adding one produces  0xFF, which is -1, as expected.  
