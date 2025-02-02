@@ -1,6 +1,5 @@
 ---
 layout: post
 title: Hello World
-visible: 0
-hidden: true
+visible: 1
 ---
