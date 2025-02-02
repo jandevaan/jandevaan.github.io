@@ -2,6 +2,7 @@
 layout: post
 title:  "When does abs() return a negative value?"
 date:   1-2-2025
+visible: 1
 categories: programming
 ---
 
