@@ -6,25 +6,28 @@ date:  2-2-2025
 categories: programming
 ---
 
+Sorry if this was an the unwelcome surprise.
 
-Yes, it happens that in most language, the function abs() on a 32/64 bit int has a special case where the outcome is negative. There is no need for alarm: the software you wrote yesterday will work today just as well. Some of you may have a hunch when this happens, you can skim over the first half: The second half is about how languages deal with it.  
+We have come to expect computers to be ... perhaps not infallible, but at least ... predictable? This abs() function, it has _one job_. And it returns negative numbers? 
 
-the function abs(), for integers, is normally implemented as x < 0 ? -x : x.
-This works most of the time: On today's computers, a 32 bit can have the values -2 147 483 648 up to 2 147 483 647. Notice that the lowest value does not have a positive counterpart. If you negate it, it should become +2 147 483 648. However, there is no signed 32 bit integer with that value. 
+Well, if it comforts you it does not happen in all languages. But in several mainstream languages (such as  C, Java and Rust), the library function abs() on a 32/64 bit int has a special case where the outcome is negative. Is this a big deal? Most likely no. But I thought it was a nice nerdy topic for my first blog post. My wife appeared to agree: "Well, I guess you've got to start small!".
 
-It turns out that it becomes -2 147 483 648. 
- 
-Let's consider what two's complement will do by default. 
+Now, some of you may have correctly guessed this has to do with _2's complement_. If so, feel free to skip the next section.   
 
-For those not familar with [2's complement](https://en.wikipedia.org/wiki/Two's_complement), I'll explain the idea.  
-If you have the (unsigned, 8 bit) value 0x00 and subtract 1 from it, it underflows to the value 0xFF. This is what 2's complement defines as -1. If you subtract 1 once again, you get 0xFE which is -2. It is really that simple: binary processors all simply inderflow if you subtract something from 0, and whatever you get is considered "-something". It turns out that, for add/subtract, signed and unsigned values can be treated identically. That is called 2's complement. All values with the highest bit set will be considered negative. Exactly half of all represented values will be negative values. The other half are positive values including 0. Because 0 is lumped in with the positive values, we have one fewer positive values (as I mentioned earlier).  
+# 2's complement
+Your computer uses [2's complement](https://en.wikipedia.org/wiki/Two's_complement). In 2's complement, a 32 bit number can have the values -2 147 483 648 up to 2 147 483 647.
+abs() is simple: it will negate all the negative numbers. So the lowest value does not have a positive counterpart. If you negate it, it should become +2 147 483 648. There is your problem: in 32 bit, there is no such value. Now what happens in stead? 
 
+## What 2's complement means
+Any digital counter with a fixed number of position will overflow default. If you have mechanical 3 digit "trip length" counter in your car, it will overflow after 999 km/miles to 000 km/miles. The counter can also go backwards if you drive the car in reverse. Now, 2's complement defines -1 similar to that: start at 0x00000000 and count backward to 0xFFFFFFF (in hex). 
+For ease of implementation, any number with the highest bit set is considered negative. 
 
 In 32 bit,  the value -2 147 483 648 is represented as 0x8000 0000. To calculate its absolute value, we must negate it, so we flip all the bits, to get 0x7FFF FFFF. Add 1, that becomes 0x8000 0000. That ... exactly what we started with. For the minimum int value, negating its value returns that same value.  This is especcially surprising because it also means that abs() will return negative values. 
 
 The rule for abs() is: test the number's sign. If negative, negate the number, otherwise return it as-is.  
 How does one negate a 2's complement number? You can subtract the number from 0 (obviously). In hardware, you cal also flip all the bits, and then add a 1. If you start with 1, flipping all the bits will produce 0xFE. Adding one produces  0xFF, which is -1, as expected.  
 
+# How do programming languages deal with this?
 This is of course not neccesarily what your code does. This is what the hardware does. Not all programming languages use hardware registers directly for variables. For instance, in Javascript, all numbers are floating point, and in that case this problem does not occur. Python and Haskell uses unbounded size integers by default. 
 Rust was a surprise. In debug mode it panics if you invoke abs(MIN_INT), but in a release build you get MIN_INT. Java simply defines that abs(MIN_INT) shall return MIN_INT. 
 
