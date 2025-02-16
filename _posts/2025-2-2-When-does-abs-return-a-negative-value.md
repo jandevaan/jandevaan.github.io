@@ -6,29 +6,25 @@ date:  2-2-2025
 categories: programming
 ---
 
-Sorry if this was an the unwelcome surprise. We expect computers to be ... perhaps not infallible, but at least ... predictable? This abs() function, it has _one job_. And it can return a negative number? 
+Sorry if this was an the unwelcome surprise. We don't expect computers to be infallible, but at least _predictable_? This abs() function, it has _one job_. And it can return a negative number? 
 
-Well, if it comforts you it does not happen in all languages. But in several mainstream languages (such as  C, Java and Rust), the library function abs() on a default integer has exactly one special case where the outcome is negative. Is this a big deal? Most likely no. But I thought it was a nice nerdy topic for my first blog post. My wife appeared to agree: "Well, I guess you've got to start small!".
+Well, if it comforts you it does not happen in all languages. But if you compile code with C, Java, or even Rust, the library function abs() has exactly one special case where the outcome is negative. Is this a big deal? Most likely no. But I thought it was a nice nerdy topic for my first blog post. My wife appeared to agree: "Well, I guess you've got to start small!".
 
-Now, some of you may have correctly guessed this has to do with _2's complement_ representation of signed integers. Correct. If you know how that works, free to skip the next section.   
+Now, some of you may have correctly guessed this has to do with _[2's complement](https://en.wikipedia.org/wiki/Two's_complement)_ representation of signed integers. Correct. If you know how that works, free to skip the next section.   
 
 # 2's complement
 
-Your computer uses [2's complement](https://en.wikipedia.org/wiki/Two's_complement). In 2's complement, a 32 bit number can have the values -2 147 483 648 up to 2 147 483 647.
-abs() is simple: it will negate all the negative numbers. So the lowest value does not have a positive counterpart. If you negate it, it should become +2 147 483 648. There is your problem: in 32 bit, there is no such value. Now what happens in stead? 
+Let's first talk about overflow. Digital counters with a fixed number of position can overflow. A mechanical distance counter in a car will overflow after 99999.9 kilometers to 00000.0 kilometers. If we assume that the counter goes backwards if you reverse, you could start with a counter of 0, back up a while, and watch the mechanical trip counter roll back to 99999.9. In binary arithmetic with fixed lenghts, it works the same. If you count backward from  0x0000 0000 ([in hex](https://simple.wikipedia.org/wiki/Hexadecimal)) you will get 0xFFFF FFFF, the highest representable number. 
 
-## What 2's complement means
+In 2's complement math 0xFFFF FFFF is the bit pattern used to represent -1. To get the other negative numbers, you can subtract any positive number from 0, and what you get due to the overflow is how you represent it in 2's complement. For ease of implementation, any value with the highest bit set is considered negative. This means half of all the numbers you can represent are negative. The remaining half are all postive numbers AND zero. Therefore in 2's complement there are more _negative_ numbers than there are positive. This means that the lowest negative number is -2 147 483 648 (hex 0x8000 0000) has no positive counterpart. 
 
-Any digital counter with a fixed number of position will overflow default. If you have mechanical 3 digit "trip length" counter in your car, it will overflow after 999 km/miles to 000 km/miles. The counter can also go backwards if you drive the car in reverse. Drive 1 km/mile backward and the mechanical trip counter will roll back to 999. In binary arithmetic with fixed lenghts, it works the same. If you count backward from  0x0000 0000 ([in hex](https://simple.wikipedia.org/wiki/Hexadecimal)) you will get 0xFFFF FFFF, the highest representable number. This will is what is used to represent for -1.  
-For ease of implementation, any number with the highest bit set is considered negative. 
+# Negate in 2's complement
+If we want to negate -2 147 483 648, we immediately run into a problem: +2 147 483 648 does not exist as a signed 32 bit int. 
+However for unsigned integers +2 147 483 648 **does** exist. It is at least plausible that that is the answer we'll get. And +2 147 483 648 is represented as ... 0x8000 0000. That is the SAME VALUE as is used for -2 147 483 648!
 
-In 32 bit,  the value -2 147 483 648 is represented as 0x8000 0000. To calculate its absolute value, we must negate it, so we flip all the bits, to get 0x7FFF FFFF. Add 1, that becomes 0x8000 0000. That ... exactly what we started with. For the minimum int value, negating its value returns that same value.  This is especcially surprising because it also means that abs() will return negative values. 
+How can this be? Well the simplest explanation is 0x8000 0000 is both 2 147 483 648 steps away from zero if you count forward, and it is also 2 147 483 648 steps away if you count backward (with overflow). 
 
-The rule for abs() is: test the number's sign. If negative, negate the number, otherwise return it as-is.  
-
-## Negate in 2's complement
-
-How does one negate a 2's complement number? You can subtract the number from 0 (obviously). In hardware, you cal also flip all the bits, and then add a 1. If you start with 1, flipping all the bits will produce 0xFE. Adding one produces  0xFF, which is -1, as expected.  
+There is another way to negate numbers in 2's complement: Flip all the bits and add 1. 
 
 
 # How do programming languages deal with this?
@@ -68,3 +64,15 @@ But you might argue, didn't C++ 17 standardize 2's complement?
 Well yes they have, except for abs(MIN_INT). That is still undefined behavior. Don't ask me why. 
 
 Writing this article I realized there is a better way: let abs() return an unsigned int. Of course the programmer can cast it to a signed int. But it may make some of them curious why the return value is unsinged, and it might trigger them to Read The Manual. comparison with constant.
+
+
+
+# Bonus chatter
+As I mentioned you could of course subtract its value from 0. Alternatively you can: 
+- Subtract 1 
+- Flip all the bits
+It does not really matter which way you do for the result. But you might be able to imagine that the above is less complicated to do in hardware. 
+
+
+
+
