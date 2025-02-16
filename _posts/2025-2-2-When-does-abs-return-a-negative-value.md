@@ -6,26 +6,30 @@ date:  2-2-2025
 categories: programming
 ---
 
-Sorry if this was an the unwelcome surprise.
+Sorry if this was an the unwelcome surprise. We expect computers to be ... perhaps not infallible, but at least ... predictable? This abs() function, it has _one job_. And it can return a negative number? 
 
-We have come to expect computers to be ... perhaps not infallible, but at least ... predictable? This abs() function, it has _one job_. And it returns negative numbers? 
+Well, if it comforts you it does not happen in all languages. But in several mainstream languages (such as  C, Java and Rust), the library function abs() on a default integer has exactly one special case where the outcome is negative. Is this a big deal? Most likely no. But I thought it was a nice nerdy topic for my first blog post. My wife appeared to agree: "Well, I guess you've got to start small!".
 
-Well, if it comforts you it does not happen in all languages. But in several mainstream languages (such as  C, Java and Rust), the library function abs() on a 32/64 bit int has a special case where the outcome is negative. Is this a big deal? Most likely no. But I thought it was a nice nerdy topic for my first blog post. My wife appeared to agree: "Well, I guess you've got to start small!".
-
-Now, some of you may have correctly guessed this has to do with _2's complement_. If so, feel free to skip the next section.   
+Now, some of you may have correctly guessed this has to do with _2's complement_ representation of signed integers. Correct. If you know how that works, free to skip the next section.   
 
 # 2's complement
+
 Your computer uses [2's complement](https://en.wikipedia.org/wiki/Two's_complement). In 2's complement, a 32 bit number can have the values -2 147 483 648 up to 2 147 483 647.
 abs() is simple: it will negate all the negative numbers. So the lowest value does not have a positive counterpart. If you negate it, it should become +2 147 483 648. There is your problem: in 32 bit, there is no such value. Now what happens in stead? 
 
 ## What 2's complement means
-Any digital counter with a fixed number of position will overflow default. If you have mechanical 3 digit "trip length" counter in your car, it will overflow after 999 km/miles to 000 km/miles. The counter can also go backwards if you drive the car in reverse. Now, 2's complement defines -1 similar to that: start at 0x00000000 and count backward to 0xFFFFFFF (in hex). 
+
+Any digital counter with a fixed number of position will overflow default. If you have mechanical 3 digit "trip length" counter in your car, it will overflow after 999 km/miles to 000 km/miles. The counter can also go backwards if you drive the car in reverse. Drive 1 km/mile backward and the mechanical trip counter will roll back to 999. In binary arithmetic with fixed lenghts, it works the same. If you count backward from  0x0000 0000 ([in hex](https://simple.wikipedia.org/wiki/Hexadecimal)) you will get 0xFFFF FFFF, the highest representable number. This will is what is used to represent for -1.  
 For ease of implementation, any number with the highest bit set is considered negative. 
 
 In 32 bit,  the value -2 147 483 648 is represented as 0x8000 0000. To calculate its absolute value, we must negate it, so we flip all the bits, to get 0x7FFF FFFF. Add 1, that becomes 0x8000 0000. That ... exactly what we started with. For the minimum int value, negating its value returns that same value.  This is especcially surprising because it also means that abs() will return negative values. 
 
 The rule for abs() is: test the number's sign. If negative, negate the number, otherwise return it as-is.  
+
+## Negate in 2's complement
+
 How does one negate a 2's complement number? You can subtract the number from 0 (obviously). In hardware, you cal also flip all the bits, and then add a 1. If you start with 1, flipping all the bits will produce 0xFE. Adding one produces  0xFF, which is -1, as expected.  
+
 
 # How do programming languages deal with this?
 This is of course not neccesarily what your code does. This is what the hardware does. Not all programming languages use hardware registers directly for variables. For instance, in Javascript, all numbers are floating point, and in that case this problem does not occur. Python and Haskell uses unbounded size integers by default. 
