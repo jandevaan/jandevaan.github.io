@@ -27,7 +27,7 @@ When you ask your processor to negate a number, is not counting steps. That woul
 
 # A somewhat mathematical argument
 There is one more argument to make why there is no other way for this to work. 
-A property of negation is "double negate is a noop": negating a number twice produces the again that number. With that property in mind, let's review all our numbers. 0 negates to itself.The numbers +1 to +2 147 483 647 that negate to -1 to -2 147 483 647 **and vice versa**. So they also have that property.
+A property of negation is "double negate is a noop": negating a number twice produces again that number. With that property in mind, let's review all our numbers. 0 negates to itself.The numbers +1 to +2 147 483 647 that negate to -1 to -2 147 483 647 **and vice versa**. So they also have that property.
 
 Lastly, we have -2 147 483 648. If we negate it, what can it become?
 -- Certainly not 0. Then it it would not negate back to itself.
