@@ -23,9 +23,13 @@ For ease of implementation, any value with the highest bit set is considered neg
 # Negating numbers in 2's complement
 If we want to negate the 32 bit number -2 147 483 648, we immediately run into a problem: +2 147 483 648 does not exist as a signed 32 bit int. A number that does exist is +2 147 483 647, represented as 0x7FFF FFFF. Negating -2 147 483 648 will produce a number one higher, so 0x8000 0000. That is the SAME VALUE as is used for -2 147 483 648! 
 How can this be? Well the simplest explanation is 0x8000 0000 is both 2 147 483 648 steps away from zero if you count forward, and it is also 2 147 483 648 steps away if you count backward (with overflow). 
-When you ask your processor to negate a number, is not counting steps. That would be inefficient. The "trick" is take the binary digits, flip all of them, and then add 1. Try it for 0: flipping all bits produces 0xFFFF FFFF. Now add 1. This will overflow to 0. It will also behave as discussed for -2 147 483 648. That is represented by 0x8000 0000. Flip all the bits to get 0x7FFF FFFF. Add 1, and you get 0x8000 0000. 
 
-# A somewhat mathematical argument
+## The bitflip trick
+When you ask your processor to negate a number, is not counting steps. That would be inefficient. The "trick" is take the binary digits, flip all of them, and then add 1. Try it for 0: flipping all bits produces 0xFFFF FFFF. Now add 1. This will overflow to 0. This works because "Flipping all the bits" is the same as subtracting your number from 0xFFFF FFFF, which we know is -1. 
+
+It will also behave as discussed for -2 147 483 648. That is represented by 0x8000 0000. Flip all the bits to get 0x7FFF FFFF. Add 1, and you get 0x8000 0000. 
+
+## A somewhat mathematical argument
 There is one more argument to make why there is no other way for this to work. 
 A property of negation is "double negate is a noop": negating a number twice produces again that number. With that property in mind, let's review all our numbers. 0 negates to itself.The numbers +1 to +2 147 483 647 that negate to -1 to -2 147 483 647 **and vice versa**. So they also have that property.
 
@@ -35,7 +39,7 @@ Lastly, we have -2 147 483 648. If we negate it, what can it become?
 -- Then the only option is that negating will produce itself. Any other outcome would invalidate "double negate is a no-op". 
 
 # How do programming languages deal with this?
-So we agree there is the edge case that abs(x) can become negative for MIN_INT. 
+So we agree that integer hardware has this edge case that causes abs(x) can become negative for MIN_INT. 
 
 Now I got a bit curious. I never gave this much thought before, but now that I have, I was worried about compilers. I know compilers will reason about your code. If you write y = abs(x), I might falsely assume that y is now always positive. 
 
