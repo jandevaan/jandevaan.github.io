@@ -6,7 +6,7 @@ date:  2-2-2025
 categories: programming
 ---
 
-Sorry if this was an the unwelcome surprise. We don't expect computers to be infallible, but at least _predictable_? This abs() function, it has _one job_. And it can return a negative number? 
+Sorry if this was an the unwelcome surprise. After all, we expect computers to be _predictable_? This abs() function, it has _one job_. And it can return a negative number? 
 
 Well, if it comforts you it does not happen in all languages. But if you compile code with C, Java, or even Rust, the library function abs() has exactly one special case where the outcome is negative. Is this a big deal? Most likely no. But I thought it was a nice nerdy topic for my first blog post. My wife appeared to agree: "Well, I guess you've got to start small!".
 
@@ -20,32 +20,32 @@ In 2's complement math 0xFFFF FFFF is the bit pattern used to represent -1. To g
 
 For ease of implementation, any value with the highest bit set is considered negative. This means half of all the numbers you can represent are negative. The remaining half are all postive numbers AND zero. Therefore in 2's complement there are more _negative_ numbers than there are positive. This means that the lowest negative number is -2 147 483 648 (hex 0x8000 0000) has no positive counterpart.
 
-# Negating numbers in 2's complement
-If we want to negate the 32 bit number -2 147 483 648, we immediately run into a problem: +2 147 483 648 does not exist as a signed 32 bit int. A number that does exist is +2 147 483 647, represented as 0x7FFF FFFF. Negating -2 147 483 648 will produce a number one higher, so 0x8000 0000. That is the SAME VALUE as is used for -2 147 483 648! 
-How can this be? Well the simplest explanation is 0x8000 0000 is both 2 147 483 648 steps away from zero if you count forward, and it is also 2 147 483 648 steps away if you count backward (with overflow). 
+# Negating -2 147 483 648 in 2's complement
+If we want to negate the 32 bit number -2 147 483 648, we immediately run into a problem: +2 147 483 648 does not exist as a signed 32 bit int. A number that does exist is +2 147 483 647, represented as 0x7FFF FFFF. A sensible candiate for +2 147 483 648 would then be 0x8000 0000. That is the SAME VALUE as is used for -2 147 483 648. And that my friend, is the answer. abs(-2 147 483 648) returns -2 147 483 648. 
 
-## The bitflip trick
-When you ask your processor to negate a number, it is not counting steps. That would be inefficient. The "trick" is take the binary digits, flip all of them, and then add 1. Try it for 0: flipping all bits produces 0xFFFF FFFF. Now add 1. This will overflow to 0. This works because "Flipping all the bits" is the same as subtracting your number from 0xFFFF FFFF, which we know is -1. 
+## The why and the how
+Whi is this? Perhaps the simplest explanation is 0x8000 0000 is both 2 147 483 648 steps away from zero if you count forward, and it is also 2 147 483 648 steps away if you count backward (with overflow). Of course your processor does something more efficient than counting, but to me the "counting" argument makes intuitive sense.
+But how does your processor do when  you ask it to negate a number? The "trick" is take the bits (ones and zeroes), invert all of them, and then add 1. It is easy to see that if you apply this to 0, you get 0 back. This works because "inverting all the bits" is the same as subtracting your number from 0xFFFF FFFF, which we know is -1. 
 
-It will also behave as discussed for -2 147 483 648. That is represented by 0x8000 0000. Flip all the bits to get 0x7FFF FFFF. Add 1, and you get 0x8000 0000. 
+Now take -2 147 483 648, represented by 0x8000 0000. Flip all the bits to get 0x7FFF FFFF. Add 1, and you get 0x8000 0000 again.
 
 ## A somewhat mathematical argument
-There is one more argument to make why there is no other way for this to work. 
-A property of negation is "double negate is a noop": negating a number twice produces again that number. With that property in mind, let's review all our numbers. 0 negates to itself.The numbers +1 to +2 147 483 647 that negate to -1 to -2 147 483 647 **and vice versa**. So they also have that property.
+If this explanation annoys you, there is one more reason why there is no other way for this to work. 
+A property of negation is "double negate is a no-op": negating a number twice produces again that number. With that property in mind, let's review all our numbers. 0 negates to itself.The numbers +1 to +2 147 483 647 that negate to -1 to -2 147 483 647 **and vice versa**. So they also have that property.
 
 Lastly, we have -2 147 483 648. If we negate it, what can it become?
  - Certainly not 0. Then it it would not negate back to itself.
  - Nor any of the other "normal" nonzero numbers, because they negate to their counterparts.
- - Then the only option is that negating will produce itself. Any other outcome would invalidate "double negate is a no-op". 
+ - Then the only option is that negating it will produce itself. Any other outcome would invalidate "double negate is a no-op". 
 
 # How do programming languages deal with this?
-So we agree that integer hardware has this edge case that causes abs(x) can become negative for MIN_INT. 
+So we agree 2's complement hardware has this edge case that causes abs(MIN_INT) to return MIN_INT. 
 
-Now I got a bit curious. I never gave this much thought before, but now that I have, I was worried about compilers. I know compilers will reason about your code. If you write y = abs(x), I might falsely assume that y is now always positive. 
+Now I got a bit curious. I never gave this much thought before, but now that I have, I was worried about compilers. I know compilers try to reason about your code. If you write y = abs(x), I might falsely assume that y is now always positive. 
 
-But the compiler will not assume that, right?
+But the compiler should not make that assumption, right?
 
-So I godbolted the following C++ code:
+The best thing is to check. I tried Compiler Explorer with the following C++ code:
 
     void Foo(int i)
     {
@@ -64,38 +64,23 @@ I was a little perplexed at first. It has optimized away my print statement! A b
 
 Oh wait... signed integer overflow ... that is Undefined Behavior.
 
-For those not in the know: undefined behavior means that the C/C++ language recognized that not all hardware neccessarily does the the same always. In particular there is a nearly extinct alternative to 2's complement that would behave very different. It turns out that the compiler is free to assume that signed overflow does not happen. And in this program it can optimize away the if branch completely, so that's what it does. 
+For those not in the know: "undefined behavior" means that long ago, the C/C++ language recognized that not all hardware neccessarily does the the same always. In particular there is a nearly extinct alternative to 2's complement that would behave very different. It turns out that the compiler is free to assume that signed overflow does not happen. And in this program it can optimize away the if branch completely, so that's what it does. 
 
 Now C/C++ are performance oriented languages. Other languages might prioritize correctness. Several languages have variable length integers. They won't have this problem. 
 
-| Language | default integer | What does abs(MIN_INT) do |
+| Language | default integer | What does abs(MIN_INT) do (in optimized builds |
 |:--------|:-------:|:-------|
-| C/C++   | 32 bit   |  returns MIN_INT (UB) |
+| C/C++   | 32 bit   |  returns MIN_INT (UB, [even in C++20](https://stackoverflow.com/a/57363573) |
 | JavaScript | --  |  N/A: all numbers are fp doubles |
-| Rust    | 32 bit   | return MIN_INT   |
-| Java    | 32 bit   | return MIN_INT  (its in the specification!) |
-| Ruby    | variable length   | returns correct value |
-| C#    | 32 bit   | throws OverflowException   |
+| Rust    | 32 bit   | [return MIN_INT](https://doc.rust-lang.org/stable/std/primitive.i32.html#method.abs)   |
+| Java    | 32 bit   | return MIN_INT  ([see the specification](https://docs.oracle.com/javase/8/docs/api/java/lang/Math.html#abs-int-)) |
+| Ruby    | variable length   | it just works |
+| Python    | 32/64 bit | [runtime conversion to larger type](https://peps.python.org/pep-0237/) |
+| C#    | 32 bit   | [throws OverflowException](https://learn.microsoft.com/en-us/dotnet/api/system.math.abs?view=netstandard-2.1#system-math-abs(system-int32))   |
+ 
+With regards to specific languages: the C++20 standard has done away with a lot of UB, but -MIN_INT is still undefined behavior, which is why the compiler ignores that it can happen. I was surprised that Rust will let abs() return MIN_INT. It's a kind of silent failure. Rust does have unsigned_abs(), which returns an unsigned number, and therefore it will always work. IMO that should have been the default. 
 
-
-
-This is of course not neccesarily what your code does. This is what the hardware does. Not all programming languages use hardware registers directly for variables. For instance, in Javascript, all numbers are floating point, and in that case this problem does not occur. Python and Haskell uses unbounded size integers by default. 
-Rust was a surprise. In debug mode it panics if you invoke abs(MIN_INT), but in a release build you get MIN_INT. Java simply defines that abs(MIN_INT) shall return MIN_INT. 
-
-One language consistently throws an exception: C#. That was funny: at some point I was a little worried that I never was aware of this edge case, but the good news is I have been programming in C# for twentysomething years and I never saw this exception. 
-
-We were not done with programming languages. 
-Let's turn to C and C++. C and C++ compilers try to reason about your code in order to optimize it. 
-Now, what would happen if wrote a program that checked if abs() returned a negative number. 
-I would expect that that the test would not be optimized away: Although it is not obvious that abs() can return negative values, compiler writers are really smart.
-
-
-This may be enough explanation for some, but for the rest: The C and C++ standards have "Undefined Behavior" in situations where computer hardware could be different for different architectures. At the time C was designed, 1's complement was also in use, and 1's complement overflow produces different results. 
-As you may have noticed abs(MIN_INT) causes overflow. Now overflow is undefined, and the compiler is allowed to assume that it does not happen. As a result the compiler has license to assume that abs() will always be 0 or bigger, so my code may be deleted.
-But you might argue, didn't C++ 17 standardize 2's complement? 
-Well yes they have, except for abs(MIN_INT). That is still undefined behavior. Don't ask me why. 
-
-Writing this article I realized there is a better way: let abs() return an unsigned int. Of course the programmer can cast it to a signed int. But it may make some of them curious why the return value is unsinged, and it might trigger them to Read The Manual. comparison with constant.
+I have done lots and lots of C#. It throws exceptions. I did not know about it until I researched this article, so I guess it doesn't happen that often. I kind of hate it. Exceptions are slow, and, with the exception of divide by zero, I don't expect exceptions from math code.   
 
 
 
