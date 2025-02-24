@@ -43,7 +43,7 @@ So we agree that 2's complement hardware has this edge case that causes abs(MIN_
 
 Secondly, I was wondering how this affects optimization. Compilers for C and C++ will likely not add checks, but on top of that they will reason about your code, and simplify it based on what they know about your variables. So I was curious. Would they assume abs(x) is always positive? I would expect that won't be fooled. 
 
-But let's try.  I tried Compiler Explorer with the following C++ code:
+But let's try.  I tried [Compiler Explorer (aka "godbolt")](https://abs.godbolt.org/z/YTETW4rY8) with the following C++ code:
 
     void Foo(int i)
     {
@@ -62,9 +62,11 @@ Just do nothing and return. It has optimized away my print statement! A bug in t
 
 I was causing ... signed integer overflow ... that is **Undefined Behavior**.
 
-For those not in the know: "undefined behavior" (UB) means that a long time ago, the C/C++ languages recognized that not all hardware neccessarily uses 2's complement. In particular there is a nearly extinct alternative to 2's complement that behaves different. C and C++ allow the compiler to assume UB does not happen. And in this program the compiler concludes that abs() can only happen due to signed integer overflow. That is undefined behavior. So it is not allowed to happen, and the compiler assumes that it does not. It follows from that that abs() can't return negative numbers, so the compiler can remove the if branch.
+For those unfamiliar: "undefined behavior" (UB) in this case means that a long time ago, the C/C++ languages recognized that not all hardware neccessarily uses 2's complement. In particular there is a [nearly extinct alternative](https://en.wikipedia.org/wiki/Ones'_complement) that behaves different. C/C++ dit not want to exclude such platforms, so C/C++ was careful to identify that where the two implementations would differ, the result is undefined.  
 
-Lots of people are angry about UB. 
+Signed overflow is exactly when you get different results, so signed overflow in C and C++ is UB[^1]. And in this program the compiler sees that abs() can only return a negative value due to such overflow. So it is not allowed to happen, and the compiler assumes that it does not. It follows from that that abs() can't return negative numbers, so the compiler can remove the if branch.
+
+Lots of people are angry about UB. But before you join the choir read [ryg's writeup](https://gist.github.com/rygorous/e0f055bfb74e3d5f0af20690759de5a7#file-gistfile1-txt). 
 
 Now C/C++ are performance oriented languages. Other languages might prioritize correctness. Several languages have variable length integers. They won't have this problem. 
 
@@ -80,8 +82,10 @@ Now C/C++ are performance oriented languages. Other languages might prioritize c
  
 With regards to specific languages: the C++20 standard has done away with a lot of UB, but -MIN_INT is still undefined behavior, which is why the compiler ignores that it can happen. I was surprised that Rust will let abs() return MIN_INT. It's a kind of silent failure. Rust does have unsigned_abs(), which returns an unsigned number, and therefore it will always work. IMO that should have been the default. 
 
-  
-A more lighthearted explanation: Causing "Undefined behavior" is like randomly activating the [Improbabilty drive](https://hitchhikers.fandom.com/wiki/Infinite_Improbability_Drive). "Without proper programming **anything** could happen!" - Zaphod Beeblebrox. 
+
+
+ [^1]: I know that most (other) UB is now removed from C++, but it would be distracting to go into that here.
+ [^2]:  A more lighthearted explanation: Causing "Undefined behavior" is like randomly activating the [Improbabilty drive](https://hitchhikers.fandom.com/wiki/Infinite_Improbability_Drive). "Without proper programming **anything** could happen!" - Zaphod Beeblebrox. 
  
 
 
