@@ -25,10 +25,12 @@ In 2's complement math 0xFFFF FFFF is the bit pattern used to represent -1. To g
 For ease of implementation, **any** value with the highest bit set is considered negative. This means half of all the numbers you can represent are negative. The remaining half are all postive numbers **and zero**. Therefore in 2's complement there are more _negative_ numbers than there are positive. The lowest negative number, -2 147 483 648 (hex 0x8000 0000) has no positive counterpart.
 
 # Negating -2 147 483 648 in 2's complement
-As said, if we want to negate the 32 bit number -2 147 483 648, it appears we can't: +2 147 483 648 does not exist as a signed 32 bit int. Where does it go? Well you'd expect it would be next to +2 147 483 647, represented as 0x7FFF FFFF. A sensible candiate for +2 147 483 648 would be one higher. That would be 0x8000 0000. However, incrementing 0x7FFF FFFF overflow into the region reserved for negative numbers. So 0x8000 0000 is actually a negative number, and as it happens it is the SAME VALUE as is used for -2 147 483 648. And that my friend, is the answer: abs(-2 147 483 648) returns -2 147 483 648. 
+As said, if we want to negate the 32 bit number -2 147 483 648, it appears we can't: +2 147 483 648 does not exist as a signed 32 bit int. Where does it go? Well you'd expect it would be next to +2 147 483 647, represented as 0x7FFF FFFF. A sensible candiate for +2 147 483 648 would be one higher. That would be 0x8000 0000. However, incrementing 0x7FFF FFFF *overflows* into the region reserved for negative numbers. So 0x8000 0000 is actually a negative number, and as it happens it is the SAME VALUE as is used for -2 147 483 648. 
+
+And that is our answer: abs(-2 147 483 648) returns -2 147 483 648. 
 
 ## How did that happen?
-Why do we end up there? Perhaps the simplest explanation is that 0x8000 0000 is both 2 147 483 648 steps away from zero if you count forward, and it is also 2 147 483 648 steps away if you count backward (with overflow). Your processor does something more efficient than counting, but to me the "counting" argument makes intuitive sense.
+Perhaps the simplest explanation is that 0x8000 0000 is both 2 147 483 648 steps away from zero if you count forward, and it is also 2 147 483 648 steps away if you count backward (with overflow). Your processor does something more efficient than counting, but to me the "counting" argument makes intuitive sense.
 But what does your processor do when you ask it to negate a number? The "trick" is take the bits (ones and zeroes), invert all of them, and then add 1. It is easy to see that if you apply this to 0, you get 0 back. This works because "inverting all the bits" is the same as subtracting your number from 0xFFFF FFFF. Because 0xFFFF FFFF is -1, we only have to add 1 to get our final result.
 
 Now take -2 147 483 648, represented by 0x8000 0000. Flip all the bits to get 0x7FFF FFFF. Add 1, and you get 0x8000 0000 again.
