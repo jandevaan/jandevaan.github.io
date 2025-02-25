@@ -97,6 +97,7 @@ There are downsides:
  * There is a lot more arithmetic that will silently overflow.
  * It is ad hoc.
  * The programmer can override it by casting.
+
 But still: it would be truthful. It would be fast, and hopefully it will trigger some programmers to read the manual to figure out why it does that.  It  deserves mention that in Rust, unsigned_abs() does exaclty that.
 
  [^1]: I know that most (other) UB is now removed from C++, but it would be distracting to go into that here.
