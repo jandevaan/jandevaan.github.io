@@ -45,8 +45,9 @@ Lastly, we have -2 147 483 648. If we negate it, what can it become?
  - Then the only option is that negating it will produce itself. Any other outcome would invalidate "double negate is a no-op". 
 
 # How do programming languages deal with this?
-So we agree that 2's complement hardware has this edge case that causes abs(MIN_INT) to return MIN_INT. A programming language can choose to grudgingly accept this, or it can try to somehow fix this. Another question is how this edge case affects optimization. 
-Compilers for performance focused languages like C and C++ do not add checks. Furthermore the compilers optimize. They reason about your code, and simplify it based on what they know. So I was curious. Would they assume abs(x) is always positive? I would expect that won't be fooled. 
+So we agree that 2's complement hardware has this edge case that causes abs(MIN_INT) to return MIN_INT. A programming language can choose to grudgingly accept this, or it can try to somehow fix this. 
+
+Another question is how this edge case affects optimization. Compilers for performance focused languages like C and C++ do not add checks. Furthermore the compilers optimize. They reason about your code, and simplify it based on what they know. So I was curious. Would they assume abs(x) is always positive? I would expect that won't be fooled. 
 
 But let's try.  I tried [Compiler Explorer (aka "godbolt")](https://abs.godbolt.org/z/YTETW4rY8) with the following C++ code:
 
