@@ -42,6 +42,7 @@ Another question is how this edge case affects optimization. Compilers for perfo
 
 But let's try.  I tried [Compiler Explorer (aka "godbolt")](https://abs.godbolt.org/z/YTETW4rY8) with the following C++ code:
 
+```C++
     void Foo(int i)
     {
           if (abs(i) < 0)
@@ -49,12 +50,14 @@ But let's try.  I tried [Compiler Explorer (aka "godbolt")](https://abs.godbolt.
                cout << "abs(" << i <<") produced a negative number!";
           }
     }
+```
 
 When you compile that **with optimizations**, the function was implemented as 
 
+```assembly
     Foo(int):
             ret
-
+```
 Just do nothing and return. **It has optimized away my print statement!** A bug in the compiler? 
 It took me a minute to realise that because the abs() function overflows I just rediscovered **Undefined Behavior**.
 
