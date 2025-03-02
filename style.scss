@@ -283,6 +283,8 @@ footer {
   text-align: center;
 }
 
+td { margin: 10px; }
+
 .language-plaintext { overflow: auto;}
 
 // Settled on moving the import of syntax highlighting to the bottom of the CSS
