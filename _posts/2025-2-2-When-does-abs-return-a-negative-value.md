@@ -6,7 +6,7 @@ date:  2-2-2025
 categories: programming
 ---
 
-Sorry if this was an the unwelcome surprise. After all, we expect computers to be _predictable_? This abs() function, it has _one job_. And it can return a negative number? 
+Sorry if this was an the unwelcome surprise. After all, we expect computers to be _predictable_? This abs() function, it has _one job_. And it can return a negative number?
 
 Well, if it comforts you it does not happen in all languages. But if you compile (optimized) code with C, Java, or even Rust, the library function abs() has exactly one special case where the outcome is negative. Is this a big deal? Most likely no. But I thought it was a nice nerdy topic for my first blog post. My wife appeared to agree: "Well, I guess you've got to start small!". 
 
@@ -18,33 +18,35 @@ Now, some of you may have correctly guessed this has to do with _[2's complement
 
 # 2's complement
 
-Two's complement integers work by allowing overflow, so I want to explain that briefly. Digital counters with a fixed number of position can overflow. A mechanical distance counter in a car will overflow after 99999.9 kilometers to 00000.0 kilometers. If we assume that the counter goes backwards if you drive the car in reverse, you could start with a counter of 0, back up a while, and watch the mechanical trip counter roll back to 99999.9. In processor registers, the number of digits is also fixed, and it behaves the same. If you count backward from  0x0000 0000 you will get 0xFFFF FFFF, the highest representable number. (I use [hex](https://simple.wikipedia.org/wiki/Hexadecimal) to represent the bit pattern, each digit corresponds to 4 bits)
+Two's complement signed integers work by virtue of allowing overflow to happen. Let me explain. Digital counters with a fixed number of position can overflow. The mechanical distance counter shown above overflows after 99999.9 kilometers to 00000.0 kilometers. If we assume that the counter goes backwards if you drive the car in reverse, you could start with a counter of 0, back up a while, and watch the mechanical trip counter roll back to 99999.9. Integers in a processor register also have a fixed number of digits, and they behave the same. 
 
-In 2's complement math 0xFFFF FFFF is the bit pattern used to represent -1. To get the other negative numbers, you can subtract any positive number from 0, and what you get due to the overflow is how you represent it's negative in 2's complement. An advantage of 2's complement is is that at the hardware level, there is little to no distinction between math with unsigned numbers and 2's complement signed integers. It saves instructions and transistors. 
+Processors work on binary numbers rather than the decimal of the odometer. An 8 bit register can hold the values 00000000 to 11111111. When interpreted as unsigned values, these represent 0 and 255. If you subtract 1 from 0, the value will wrap around to 11111111. Normally this represents 255, but you can choose to read it as -1. It is the result of 0-1, after all. In two's complement, if the highest bit is set, the value is negative. 
 
-For ease of implementation, **any** value with the highest bit set is considered negative. This means half of all the numbers you can represent are negative. The remaining half are all postive numbers **and zero**. Therefore in 2's complement there are more _negative_ numbers than there are positive. The lowest negative number, -2 147 483 648 (hex 0x8000 0000) has no positive counterpart.
+This idea can also be applied to 32 bits. For numbers of that size, binary values are difficult to read. So I use [hexadecimal](https://simple.wikipedia.org/wiki/Hexadecimal) to represent the bit pattern. Hex numbers 0 to 15 are represented by 0-9, then ABCDEF. -1 in 32 bit is  hex FFFF FFFF. The first number with the highest bit set is hex 8000 0000, and that is the first negative number.
 
-| value | representation (hex)|
+| value | 32 bit representation (hex)|
 |:------|:--------------:|
 |  -2 147 483 648 |  8000 0000 | 
 |  -2 147 483 647 |  8000 0001 |
 | ... | ... |
+| -16  | FFFF FFEF |
+| ... | ... |
 | -1  | FFFF FFFF|
 | 0   | 0000 0000|
 | +1  | 0000 0001|
+| ... | ... |
+| +16  | 0000 0010 |
+| ... | ... |
+|  +2 147 483 646 |  7FFF FFFE |
 |  +2 147 483 647 |  7FFF FFFF |
 
 # Negating -2 147 483 648 in 2's complement
-As said, if we want to negate the 32 bit number -2 147 483 648, it appears we can't: +2 147 483 648 does not exist as a signed 32 bit int. But if you do it anyway, what happens? Well the obvious place would be next to +2 147 483 647 (hex 7FFF FFFF). A sensible candiate for +2 147 483 648 would be one higher. That would be hex 8000 0000. However, incrementing hex 7FFF FFFF *overflows* into the region reserved for negative numbers. So hex 8000 0000 is actually a negative number, and as it happens it is the SAME VALUE as is used for -2 147 483 648. 
+If we try to negate the 32 bit number -2 147 483 648, it appears we can't: +2 147 483 648 does not exist as a signed 32 bit int. But if you do it anyway, where would it end up? Well the obvious place would be next position after +2 147 483 647 (hex 7FFF FFFF). That should be hex 8000 0000. However, incrementing hex 7FFF FFFF *overflows* into the region reserved for negative numbers. So hex 8000 0000 is actually a negative number, and as it happens it is the SAME VALUE as is used for -2 147 483 648. 
 
 And that is our answer: abs(-2 147 483 648) returns -2 147 483 648. 
 
 Perhaps the simplest explanation is that hex 8000 0000 is both 2 147 483 648 steps away from zero if you count forward, and it is also 2 147 483 648 steps away if you count backward (with overflow). Your processor does something more efficient than counting, but to me the "counting" argument makes intuitive sense.
-Now take -2 147 483 648, represented by hex 8000 0000. Flip all the bits to get hex 7FFF FFFF. Add 1, and you get hex 8000 0000 again.
-
-
-
-
+ 
 # How do programming languages deal with this?
 So we agree that 2's complement hardware has this edge case that causes abs(MIN_INT) to return MIN_INT. A programming language can choose to grudgingly accept this, or it can try to somehow fix this. 
 
@@ -109,4 +111,12 @@ But what does your processor do when you ask it to negate a number? The "trick" 
 
 
 
+(I use [hex](https://simple.wikipedia.org/wiki/Hexadecimal) to represent the bit pattern, each digit corresponds to 4 bits)
+If you count backward from  0x0000 0000 you will get 0xFFFF FFFF, the highest representable number. 
 
+In 2's complement math 0xFFFF FFFF is the bit pattern used to represent -1. To get the other negative numbers, you can subtract any positive number from 0, and what you get due to the overflow is how you represent it's negative in 2's complement. An advantage of 2's complement is is that at the hardware level, there is little to no distinction between math with unsigned numbers and 2's complement signed integers. It saves instructions and transistors. 
+
+For ease of implementation, **any** value with the highest bit set is considered negative. This means half of all the numbers you can represent are negative. The remaining half are all postive numbers **and zero**. Therefore in 2's complement there are more _negative_ numbers than there are positive. The lowest negative number, -2 147 483 648 (hex 0x8000 0000) has no positive counterpart.
+
+
+Now take -2 147 483 648, represented by hex 8000 0000. Flip all the bits to get hex 7FFF FFFF. Add 1, and you get hex 8000 0000 again.
