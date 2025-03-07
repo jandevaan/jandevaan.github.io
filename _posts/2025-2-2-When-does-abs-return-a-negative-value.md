@@ -24,28 +24,26 @@ Processors work on binary numbers rather than the decimal of the odometer. An 8 
 
 This idea can also be applied to 32 bits. For numbers of that size, binary values are difficult to read. So I use [hexadecimal](https://simple.wikipedia.org/wiki/Hexadecimal) to represent the bit pattern. Hex numbers 0 to 15 are represented by 0-9, then ABCDEF. -1 in 32 bit is  hex FFFF FFFF. The first number with the highest bit set is hex 8000 0000, and that is the first negative number.
 
+See the following table how that works out for the smallest and largest possible values:
+
 | value | 32 bit representation (hex)|
-|:------|:--------------:|
+|------:|:--------------:|
 |  -2 147 483 648 |  8000 0000 | 
-|  -2 147 483 647 |  8000 0001 |
-| ... | ... |
-| -16  | FFFF FFEF |
 | ... | ... |
 | -1  | FFFF FFFF|
 | 0   | 0000 0000|
 | +1  | 0000 0001|
 | ... | ... |
-| +16  | 0000 0010 |
-| ... | ... |
-|  +2 147 483 646 |  7FFF FFFE |
 |  +2 147 483 647 |  7FFF FFFF |
 
 # Negating -2 147 483 648 in 2's complement
-If we try to negate the 32 bit number -2 147 483 648, it appears we can't: +2 147 483 648 does not exist as a signed 32 bit int. But if you do it anyway, where would it end up? Well the obvious place would be next position after +2 147 483 647 (hex 7FFF FFFF). That should be hex 8000 0000. However, incrementing hex 7FFF FFFF *overflows* into the region reserved for negative numbers. So hex 8000 0000 is actually a negative number, and as it happens it is the SAME VALUE as is used for -2 147 483 648. 
+In binary two's complement, negating a value can be implemented by Zczcxzxc
+OK. Let's try to negate -2 147 483 648. Why that number? Well, because it can't work. The positive range ends at +2 147 483 647.  
+it anyway, where would it end up? Well the obvious place would be next position after +2 147 483 647 (hex 7FFF FFFF). That should be hex 8000 0000. However, incrementing hex 7FFF FFFF *overflows* into the region reserved for negative numbers. So where we end up, hex 8000 0000, is actually a negative number, and as it happens it is the SAME VALUE as is used for -2 147 483 648. 
 
 And that is our answer: abs(-2 147 483 648) returns -2 147 483 648. 
 
-Perhaps the simplest explanation is that hex 8000 0000 is both 2 147 483 648 steps away from zero if you count forward, and it is also 2 147 483 648 steps away if you count backward (with overflow). Your processor does something more efficient than counting, but to me the "counting" argument makes intuitive sense.
+Perhaps the simplest explanation is that hex 8000 0000 is both 2 147 483 648 steps away from zero if you count forward, and it is also 2 147 483 648 steps away if you count backward. 
  
 # How do programming languages deal with this?
 So we agree that 2's complement hardware has this edge case that causes abs(MIN_INT) to return MIN_INT. A programming language can choose to grudgingly accept this, or it can try to somehow fix this. 
