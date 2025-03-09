@@ -18,11 +18,12 @@ Now, some of you may have correctly guessed this has to do with _[2's complement
 
 # 2's complement
 
-Two's complement signed integers work by virtue of allowing overflow to happen. Let me explain. Digital counters with a fixed number of position can overflow. The mechanical distance counter shown above overflows after 99999.9 kilometers to 00000.0 kilometers. If we assume that the counter goes backwards if you drive the car in reverse, you could start with a counter of 0, back up a while, and watch the mechanical trip counter roll back to 99999.9. Integers in a processor register also have a fixed number of digits, and they behave the same. 
+Two's complement signed integers work by virtue of allowing overflow to happen. Let me explain. Digital counters with a fixed number of position can overflow. The mechanical distance counter shown above overflows after 99999.9 kilometers to 00000.0 kilometers. Most such counters go backwards if you drive the car in reverse: you  start with a counter of 0.0, back up a while, and watch the mechanical trip counter roll back to 99999.9. Integers in a processor register also have a fixed number of digits, and they have the same overflow behavior. 
 
-Processors work on binary numbers rather than the decimal of the odometer. An 8 bit register can hold the values 00000000 to 11111111. When interpreted as unsigned values, these represent 0 and 255. If you subtract 1 from 0, the value will wrap around to 11111111. Normally this represents 255, but you can choose to read it as -1. It is the result of 0-1, after all. In two's complement, if the highest bit is set, the value is negative. 
-
-This idea can also be applied to 32 bits. For numbers of that size, binary values are difficult to read. So I use [hexadecimal](https://simple.wikipedia.org/wiki/Hexadecimal) to represent the bit pattern. Hex numbers 0 to 15 are represented by 0-9, then ABCDEF. -1 in 32 bit is  hex FFFF FFFF. The first number with the highest bit set is hex 8000 0000, and that is the first negative number.
+Processors work on binary numbers rather than the decimal of the odometer. An 8 bit register can hold the values 00000000 to 11111111. When interpreted as unsigned values, these represent 0 and 255. If you subtract 1 from 00000000, the value will wrap around to 11111111. Normally this represents 255, but you can choose to read it as -1: it is the result of 0 - 1, after all. This is the 2's complement convention. The higher numbers are considered negative. The rule is that if the highest bit is set, the value is negative. 
+ 
+This system can also be applied to 32 bits. 
+For numbers of that size, binary values are difficult to read. So I use [hexadecimal](https://simple.wikipedia.org/wiki/Hexadecimal) to represent the bit pattern. [^16]
 
 See the following table how that works out for the smallest and largest possible values:
 
@@ -36,21 +37,26 @@ See the following table how that works out for the smallest and largest possible
 | ... | ... |
 |  +2 147 483 647 |  7FFF FFFF |
 
+The peculiar thing about 2's complement is that we have this extra negative number. The reason for it is that we use exactly half of the values for the negative numbers, and the other half for zero plus all the positive numbers. Because 0 comes from the positive pool, there is room for one more negative numbers as for positive ones.  
+
 # Negating -2 147 483 648 in 2's complement
-In binary two's complement, negating a value can be implemented by Zczcxzxc
-OK. Let's try to negate -2 147 483 648. Why that number? Well, because it can't work. The positive range ends at +2 147 483 647.  
-it anyway, where would it end up? Well the obvious place would be next position after +2 147 483 647 (hex 7FFF FFFF). That should be hex 8000 0000. However, incrementing hex 7FFF FFFF *overflows* into the region reserved for negative numbers. So where we end up, hex 8000 0000, is actually a negative number, and as it happens it is the SAME VALUE as is used for -2 147 483 648. 
+The title of the blog is about the abs() function. For a positive value abs() does nothing. For a negative value it has return the negated argument. So rather than abs() we can consider the properties of _negation_.
+
+Consider what happens if we negate -2 147 483 648. In the table above, we don't have +2 147 483 648. What would be the logical outcome? I think you'll agree the result would be next value after +2 147 483 647 (hex 7FFF FFFF). But that will wrap around to the negate values. And even worse, it would wrap around to 8000 0000. That represents -2 147 483 648, the value we started with. 
 
 And that is our answer: abs(-2 147 483 648) returns -2 147 483 648. 
 
-Perhaps the simplest explanation is that hex 8000 0000 is both 2 147 483 648 steps away from zero if you count forward, and it is also 2 147 483 648 steps away if you count backward. 
- 
+I have not discussed what a processor actually does to negate a 2's complement number. An efficient way is to negate in 2's complement is "invert all bits and add 1". This is a very cute formula but explaining why that produces the result above will take a lot of space, so I chose not too. 
+
+The simplest explanation is that hex 8000 0000 is both 2 147 483 648 steps away from zero if you count backward, and it is also 2 147 483 648 steps away if you count forward. If you negate that value sense that you end up with the same number you started with: It is equally far from zero as the source value, in the other direction.
+
 # How do programming languages deal with this?
-So we agree that 2's complement hardware has this edge case that causes abs(MIN_INT) to return MIN_INT. A programming language can choose to grudgingly accept this, or it can try to somehow fix this. 
 
-Another question is how this edge case affects optimization. Compilers for performance focused languages like C and C++ do not add checks. Furthermore the compilers optimize. They reason about your code, and simplify it based on what they know. So I was curious. Would they assume abs(x) is always positive? I would expect that won't be fooled. 
+So we agree that 2's complement hardware has this edge case. A programming language can choose to accept this, or it can try to somehow fix this. 
 
-But let's try.  I tried [Compiler Explorer (aka "godbolt")](https://abs.godbolt.org/z/YTETW4rY8) with the following C++ code. 
+Another question is how this edge case affects optimization. Compilers for performance focused languages like C and C++ do not add checks.  
+
+But let's try.  I tried [Compiler Explorer (aka "godbolt")](https://abs.godbolt.org/z/YTETW4rY8) with the following C++ code. The idea is to bait the compiler into optimizing away code that it shouldn't. They reason about your code, and simplify it based on what they know. So I was curious. Would the compiler incorrectly assume abs(x) is always positive? If it does assume that, It can decide that the entire if statement is pointless, and can be removed. This is the C++ code:
 
 ```cpp
 void Foo(int i)
@@ -61,7 +67,7 @@ void Foo(int i)
       }
 }
 ```
-I was curious if the compiler thinks that abs() can't be negative. When you compile that **with optimizations**, the function was implemented as 
+When you compile that **with optimizations**, the function compiles to:
 
 ```assembly
 Foo(int):
@@ -69,7 +75,7 @@ Foo(int):
 ```
 
  **It has optimized away my print statement!** A bug in the compiler? 
-It took me a minute to realise that because the abs() function overflows I just rediscovered **Undefined Behavior**.
+It took me a minute to realise that because the abs() function _overflows_ and I just rediscovered **Undefined Behavior**.
 
 For those unfamiliar: "undefined behavior" (UB) in this case means that a long time ago, the C/C++ languages recognized that not all hardware neccessarily uses 2's complement. In particular there is a [nearly extinct alternative](https://en.wikipedia.org/wiki/Ones'_complement) that behaves different. C/C++ dit not want to exclude such platforms, so C/C++ was careful to identify that where the two implementations would differ, the result is undefined.  
 
@@ -102,9 +108,8 @@ I really really like Zig's solution: _just make the return type unsigned_. That 
 
 But what does your processor do when you ask it to negate a number? The "trick" is take the bits (ones and zeroes), invert all of them, and then add 1. It is easy to see that if you apply this to 0, you get 0 back. This works because "inverting all the bits" is the same as subtracting your number from 0xFFFF FFFF. Because 0xFFFF FFFF is -1, we only have to add 1 to get our final result.
 
-
  [^1]: I know that most (other) UB is now removed from C++, but it would be distracting to go into that here.
- [^2]:  A more lighthearted explanation: Causing "Undefined behavior" is like randomly activating the [Improbabilty drive](https://hitchhikers.fandom.com/wiki/Infinite_Improbability_Drive). "Are you crazy? Without proper programming **anything** could happen!" - Zaphod Beeblebrox. 
+ [^16]: A hex numbers 0-15 represent 4 bits, and are written as 0123456789ABCDEF. The value -1 in 32 bit is written as hex FFFF FFFF. The first number with the highest bit set is hex 8000 0000, and that is the first negative number.
  
 
 
