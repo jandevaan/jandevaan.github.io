@@ -284,8 +284,13 @@ footer {
 }
 
 td { 
-	color: $lightGray;
-	margin: 10px; 
+	
+  border: 1px solid #ddd;
+	background-color: $lightGray;
+	margin-left: 10px; 
+	margin-right: 10px;
+	margin-top: 5px;
+        margin-bottom: 5px;
 }
 
 .language-plaintext { overflow: auto;}
