@@ -283,14 +283,23 @@ footer {
   text-align: center;
 }
 
+th { 
+	
+  border: 1px solid #ddd;
+	background-color: $darkGray;
+	padding-left: 10px; 
+	padding-right: 10px;
+	padding-top: 5px;
+        padding-bottom: 5px;
+}
 td { 
 	
   border: 1px solid #ddd;
 	background-color: $lightGray;
-	margin-left: 10px; 
-	margin-right: 10px;
-	margin-top: 5px;
-        margin-bottom: 5px;
+	padding-left: 10px; 
+	padding-right: 10px;
+	padding-top: 5px;
+        padding-bottom: 5px;
 }
 
 .language-plaintext { overflow: auto;}
