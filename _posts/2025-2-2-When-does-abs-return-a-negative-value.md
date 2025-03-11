@@ -85,8 +85,7 @@ Lots of people are angry about how today's compilers handle UB. However by treat
 
 Now C/C++ are performance oriented languages, and this notion of UB. Here are some examples:
 
-| Language | default integer | What does abs(MIN_INT) do. |
-|   |   |   (by default, optimized) |
+| Language | default integer | What does abs(MIN_INT) do? <BR>(optimized) |
 |:-------:|:-------:|:-------|
 | C/C++   | 32 bit   | [UB] returns MIN_INT (UB, [even in C++20](https://stackoverflow.com/a/57363573) |
 | JavaScript | --  |  N/A: all numbers are fp doubles |
