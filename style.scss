@@ -302,6 +302,8 @@ td {
         padding-bottom: 5px;
 }
 
+.footnote  { vertical-align:super; font-size: 80%; }
+
 .language-plaintext { overflow: auto;}
 
 // Settled on moving the import of syntax highlighting to the bottom of the CSS
