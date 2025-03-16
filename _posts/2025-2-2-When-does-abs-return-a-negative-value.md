@@ -6,25 +6,23 @@ date:  2-2-2025
 categories: programming
 ---
 
-What do you mean, you might ask. This abs() function, it has _one job_: making numbers positive. And it can return a negative number?
+What do you mean, you might ask ... this abs() function, it has _one job_: making numbers positive. And it can return a negative number?
 
-Well, it can. For integers.
+Well yes. But only for fixed size integers, and it does not happen in all languages. But if you compile (optimized) code with C, Java, or even Rust, the library function abs() (for integers) has _one special case_ where the outcome is negative. Is this a big deal? Most likely no. But I thought it was a nice topic for my first blog post. I tried to explain to my wife what I'd write about. She appeared to agree: "Well, I guess you've got to start small!". 
 
-But, it does not happen in all languages. But if you compile (optimized) code with C, Java, or even Rust, the library function abs() (for integers) has _one special case_ where the outcome is negative. Is this a big deal? Most likely no. But I thought it was a nice topic for my first blog post. I tried to explain to my wife what I'd write about. She appeared to agree: "Well, I guess you've got to start small!". 
-
-Now, some of you may have correctly guessed this has to do with _[2's complement](https://en.wikipedia.org/wiki/Two's_complement)_ representation of signed integers. If you know how that works, free to skip the next section. And to those same people: please don't hate me for oversimplifying. I am trying to cater to a wide audience here.
+Now, some of you may have correctly guessed this has to do with _[2's complement](https://en.wikipedia.org/wiki/Two's_complement)_ representation of signed integers. If you know how that works, free to skip the next section. And to those same people: please don't hate on me for oversimplifying. I am trying to cater to a wide audience here.
 
 # 2's complement
 
 ![a mechanical odometer at 99999.9](../images/Odometer_rollover.jpg)
 
-Two's complement signed integers work by virtue of allowing overflow to happen. Let me explain. Digital counters with a fixed number of position can overflow. The mechanical distance counter shown above overflows after 99999.9 kilometers to 00000.0 kilometers. Most such counters go backwards if you drive the car in reverse: you  start with a counter of 0.0, back up a while, and watch the mechanical trip counter roll back to 99999.9. Integers in a processor register also have a fixed number of digits, and they have the same overflow behavior. 
+Informally, you can say that two's complement works by allowing overflow to happen. I'll explain. Digital counters with a fixed number of position can overflow. The mechanical distance counter shown above overflows after 99999.9 kilometers to 00000.0 kilometers. Most such counters go backwards if you drive the car in reverse: you  start with a counter of 0.0, back up a while, and watch the mechanical trip counter roll back to 99999.9. Integers in a processor register also have a fixed number of digits, and they have the same overflow behavior.
 
 Processors work on binary numbers rather than the decimal of the odometer. An 8 bit variable can hold the binary values 00000000 to 11111111. When interpreted as unsigned values, these represent 0 to 255 (decimal). 
 
-If you subtract 1 from 00000000, the value will wrap around to 11111111. As unsigned value this represents 255, but you can choose to let it represent -1: it is the result of 0 - 1, after all. In the same way you can subtract any number from 0, let the calculation wrap around, and choose the result to denote the negative of this number. It turns out that you can continue to do addition and subtraction, mixing positive and our newly found negative numbers identical to unsigned arithmetic.  
+If you subtract 1 from 00000000, the value will wrap around to 11111111. As an unsigned value this represents 255, but you can choose to let it represent -1: it is the result of 0-1, after all. In the same way you can subtract any number from 0, let the calculation wrap around, and choose the result to represent the negative of this number. It turns out that you can continue to do addition and subtraction, mixing positive and our newly defined negative numbers identical to unsigned arithmetic. 
 
-2's complement is defined such that if the highest bit is set, we assume the number is negative. That means for a byte that the range goes from -128 up to 127 (inclusive). 
+2's complement is defined such that if the highest bit is set, we assume the number is negative. That means for a byte that the range goes from -128 up to 127 (inclusive).
 
 This system can also be applied to 32 bits. For numbers of that size, binary values are difficult to read. So I use [hexadecimal](https://simple.wikipedia.org/wiki/Hexadecimal) to represent the bit pattern. [^16]
 
@@ -45,21 +43,19 @@ See the following table how that works out for the smallest and largest possible
 In 2's complement there is always one extra negative number. The reason is that we use exactly half of the values for the negative numbers, and the other half for positive numbers. zero counts as positive. Because of that, there is room for one more negative number than for positive ones.  
 
 # Negating -2 147 483 648 in 2's complement
-The title of the blog is about the abs() function. For a positive value abs() returns it's input. For a negative value it will return the input negated. So we must consider the properties of _negation_.
+The title of the blog is about the abs() function. For a positive value abs() returns it's input. For a negative value it will return the input negated. So we must consider the properties of _negation_. 
 
 Consider what happens if we negate -2 147 483 648. In the table above, we don't have +2 147 483 648. What would be the logical outcome? I think you'll agree the result would be next value after +2 147 483 647 (hex 7FFF FFFF). But that will wrap around to the negate values. And even worse, it would wrap around to 8000 0000. That represents -2 147 483 648, the value we started with. 
 
-And that is our answer: abs(-2 147 483 648) returns -2 147 483 648. 
+And that is our answer: **abs(-2 147 483 648) returns -2 147 483 648**. 
 
-I have not discussed what a processor actually does to negate a 2's complement number. An efficient way  to negate in 2's complement is "invert all bits and add 1". The reason it works is that "invert all the bits" is the same as "subtract the number from -1". It reproduces the result above. 
+Negating is equivalent to "find the number equally far from zero, but in the opposite direction". Now recall that -2 147 483 648 is represented by hex 8000 0000. That is halfway the range of available 32 bit numbers, so it is equally far from zero if you walk forward or backward. That's why you get the same number when negating. 
 
-I like the following explanation: Negating is the same as "find the number equally far from zero, but in the opposite direction". Now -2 147 483 648 is represented by hex 8000 0000. That number is equally far from zero if you walk forward or backward. That's wy you get the same number when negating. 
+Now, what your computer actually does to negate a number is "invert all bits and add 1". That is a smart algorithm, and also efficient to implement in hardware. I don't use here because it did not help to explain our edge case. But it is equivalent.    
 
 # How do programming languages deal with this?
 
-So, by now, I hope we agree that 2's complement hardware has this edge case. A programming language can choose to accept this, or it can try to somehow fix this. 
-
-A further question is how this edge case affects optimizations in performance focused languages like C and C++. 
+So, by now, I hope we agree that 2's complement hardware has this edge case. A programming language can choose to accept this, or it can try to fix this. Another question is how this edge case affects optimizations in performance focused languages like C and C++. 
 
 Let's try.  I tried [Compiler Explorer (aka "godbolt")](https://abs.godbolt.org/z/YTETW4rY8) with the  C++ code directly below. I've written it such that, if you assume abs() is always > 0, it can remove code. I expected that it would not do this. Compiler writers would not make naive assumptions right? This is the C++ code:
 
