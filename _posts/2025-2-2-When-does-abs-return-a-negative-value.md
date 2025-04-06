@@ -14,31 +14,26 @@ Now, some of you may have correctly guessed this has to do with _[2's complement
 
 # 2's complement
 
-![a mechanical odometer at 99999.9](../images/Odometer_rollover.jpg)
+It will be useful to write binary numbers as [hexadecimal](https://simple.wikipedia.org/wiki/Hexadecimal) (hex). In hex, we use digits that represent 4 binary bits each. It uses as digits the familiar 0-9, followed by A-F. A-F represent the values 10-15 (decimal). A byte can be written with 2 hex digits: FF is the max value of 255 (all bits set), 80 is 128 (only the highest bit set).  
 
-Digital counters with a fixed number of position can overflow. The mechanical distance counter shown above overflows after 99999.9 kilometers to 00000.0 kilometers. Most mechanical counters go backwards if you drive the car in reverse: you  start with a counter of 0.0, back up a while, and watch the mechanical trip counter roll back to 99999.9. Integers in a processor register also have a fixed number of digits, and they have the same overflow behavior.
-
-Suppose I have such a processor with unsigned integer registers. What happens if we calculate `1 - 0`? It will wrap around to the highest unsigned value. Now suppose we decide that the resulting value means "-1" from now on. We can similarly define -2,-3, ... etc. You might be puzzled why, but it turns out that this is a definition that not only defines negative numbers, but if we use them in integer math, they behave the same way as actual negative integers.
-
-
-The common choice is to reserve half of the range for negative values. If the highest bit is set, we consider the number is negative. That means for a byte that the range goes from -128 up to 127 (inclusive). This isn't symmetrical: there are more negative numbers than there are positives! This is because in the positive half we also have reserved a space for the zero. 
-
-This system can also be applied to 32 bits. For numbers of that size, binary values are difficult to read. So I use [hexadecimal](https://simple.wikipedia.org/wiki/Hexadecimal) to represent the bit pattern. [^16]
-
-See the following table how that works out for the smallest and largest possible values:
+The following table shows, for 32 bit numbers, how some natural numbers are represented in 32 bits signed complement.
 
 | value | 32 bit representation (in hex)|
-|:-----:|:--------------:|
-|  -2 147 483 648 |  8000 0000 | 
-|  -2 147 483 647 |  8000 0001 | 
-| ... | ... |
-| -2  | FFFF FFFE|
-| -1  | FFFF FFFF|
-| 0   | 0000 0000|
-| +1  | 0000 0001|
-| ... | ... |
-|  +2 147 483 647 |  7FFF FFFF |
- 
+|----------------:|:------------:|
+|  -2 147 483 648 |  `8000 0000` | 
+|  -2 147 483 647 |  `8000 0001` | 
+| ...             | ...          |
+| -2              | `FFFF FFFE`  |
+| -1              | `FFFF FFFF`  |
+| 0               | `0000 0000`  |
+| +1              | `0000 0001`  |
+| ...             | ...          |
+|  +2 147 483 647 |  `7FFF FFFF` |
+
+The positive values have the same positions as they have in unsigned. 
+Please notice that all numbers with the highest bit set are negative. They are almost exactly in ascending order. The only exception is going from -1 to 0: there the 32 bit number overflows from the max value to 0. Overflowing like that is what computers do by default: If you have a value 'FFFF FFFF' and you add 2, that operation will overflow to 1. If you turn off overflow checking at 0, any add and subtract operation using 2's complement notation will produce another correct 2's complement number. That is, as long as it does not overflow at the other end. If the numbers get too large, you will get overflow: You can't subtract 1 from -2 147 483 648, that will overflow to +2 147 483 647.   
+
+The common choice is to reserve half of the range for negative values. If the highest bit is set, we consider the number is negative. That means for a byte that the range goes from -128 up to 127 (inclusive). This isn't symmetrical: there are more negative numbers than there are positives! This is because in the positive half we also have reserved a space for the zero. 
 
 # Negating -2 147 483 648 in 2's complement
 The title of the blog is about the abs() function. For a positive input abs() returns it's input. For a negative value it will return the input negated. So we must consider _negation_. 
@@ -108,8 +103,7 @@ I really really like Zig's solution: _just make the return type unsigned_. That 
 But what does your processor do when you ask it to negate a number? The "trick" is take the bits (ones and zeroes), invert all of them, and then add 1. It is easy to see that if you apply this to 0, you get 0 back. This works because "inverting all the bits" is the same as subtracting your number from 0xFFFF FFFF. Because 0xFFFF FFFF is -1, we only have to add 1 to get our final result.
 
  [^1]: I know that most (other) UB is now removed from C++, but it would be distracting to go into that here.
- [^16]: A hex numbers 0-15 represent 4 bits, and are written as 0123456789ABCDEF. The value -1 in 32 bit is written as hex FFFF FFFF. The first number with the highest bit set is hex 8000 0000, and that is the first negative number.
- 
+  
 
 
 
